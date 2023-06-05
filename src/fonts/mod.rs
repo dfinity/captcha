@@ -19,6 +19,7 @@ pub trait Font {
     }
 }
 
+#[derive(Clone)]
 pub struct Default {
     data: HashMap<char, String>,
 }

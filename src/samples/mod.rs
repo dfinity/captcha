@@ -15,7 +15,7 @@
 //! ```
 use filters::{Cow, Dots, Grid, Noise, Wave};
 use rand::{thread_rng, Rng};
-use {Captcha, Geometry};
+use {new_captcha, Captcha, Geometry};
 
 const WIDTH: u32 = 220;
 const HEIGHT: u32 = 120;
@@ -125,7 +125,7 @@ fn rnd() -> u32 {
 }
 
 fn captcha_amelia(d: Difficulty) -> Captcha {
-    let mut c = Captcha::new();
+    let mut c = new_captcha();
     c.add_chars(rnd());
     match d {
         Difficulty::Easy => c
@@ -154,7 +154,7 @@ fn captcha_lucy(d: Difficulty) -> Captcha {
         Difficulty::Hard => (0.6, 4),
     };
 
-    let mut c = Captcha::new();
+    let mut c = new_captcha();
     c.add_chars(rnd())
         .apply_filter(Noise::new(n))
         .apply_filter(Grid::new(g, g))
@@ -163,7 +163,7 @@ fn captcha_lucy(d: Difficulty) -> Captcha {
 }
 
 fn captcha_mila(d: Difficulty) -> Captcha {
-    let mut c = Captcha::new();
+    let mut c = new_captcha();
     c.add_chars(rnd());
     match d {
         Difficulty::Easy => c.apply_filter(Noise::new(0.2)),

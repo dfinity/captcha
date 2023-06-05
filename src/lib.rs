@@ -57,7 +57,7 @@ extern crate serde_json;
 
 mod audio;
 pub mod filters;
-mod fonts;
+pub mod fonts;
 mod images;
 mod samples;
 
@@ -99,46 +99,49 @@ impl Geometry {
     }
 }
 
-pub type Captcha = RngCaptcha<ThreadRng>;
+pub type Captcha = RngCaptcha<ThreadRng, Default>;
 
 /// A CAPTCHA.
-pub struct RngCaptcha<T> {
+pub struct RngCaptcha<T, F> {
     img: Image,
-    font: Box<dyn Font>,
+    font: Box<F>,
     text_area: Geometry,
     chars: Vec<char>,
     use_font_chars: Vec<char>,
     color: Option<[u8; 3]>,
     rng: T,
 }
-
-impl<T: rand::Rng + rand::RngCore> RngCaptcha<T> {
-
-    pub fn from_rng(rng: T) -> RngCaptcha<T> {
-        // TODO fixed width + height
-        let w = 400;
-        let h = 300;
-        let f = Box::new(Default::new());
-        RngCaptcha::<T> {
-            use_font_chars: f.chars(),
-            img: Image::new(w, h),
-            font: f,
-            text_area: Geometry {
-                left: w / 4,
-                right: w / 4,
-                top: h / 2,
-                bottom: h / 2,
-            },
-            chars: vec![],
-            color: None,
-            rng,
-        }
+pub fn new_captcha_with<Fo: Font + 'static, T: rand::Rng + rand::RngCore>(rng: T, font: Fo) -> RngCaptcha<T, Fo> {
+    // TODO fixed width + height
+    let w = 400;
+    let h = 300;
+    let font = Box::new(font);
+    RngCaptcha::<T, Fo> {
+        use_font_chars: font.chars(),
+        img: Image::new(w, h),
+        font,
+        text_area: Geometry {
+            left: w / 4,
+            right: w / 4,
+            top: h / 2,
+            bottom: h / 2,
+        },
+        chars: vec![],
+        color: None,
+        rng,
     }
+}
 
-    /// Returns an empty CAPTCHA.
-    pub fn new() -> Captcha {
-        Captcha::from_rng(thread_rng())
-    }
+pub fn from_rng<T: rand::Rng + rand::RngCore>(rng: T) -> RngCaptcha<T, Default> {
+    new_captcha_with(rng, Default::new())
+}
+
+/// Returns an empty CAPTCHA.
+pub fn new_captcha() -> Captcha {
+    from_rng(thread_rng())
+}
+
+impl<T: rand::Rng + rand::RngCore, Fo: Font + 'static> RngCaptcha<T, Fo> {
 
     /// Applies the filter `f` to the CAPTCHA.
     ///
@@ -155,8 +158,8 @@ impl<T: rand::Rng + rand::RngCore> RngCaptcha<T> {
     /// been added to the CAPTCHA. The new font is only applied to the characters which are written
     /// to the CAPTCHA after this method is called.
     ///
-    /// If characters have been set via set_chars(), this method will overwrite the setting.
-    pub fn set_font<F: Font + 'static>(&mut self, f: F) -> &mut Self {
+    /// If characters have been set via set_charset(), this method will overwrite the setting.
+    pub fn set_font(&mut self, f: Fo) -> &mut Self {
         self.font = Box::new(f);
         self.use_font_chars = self.font.chars();
         self
@@ -181,7 +184,7 @@ impl<T: rand::Rng + rand::RngCore> RngCaptcha<T> {
     ///
     /// Important: The characters have to exist for the current font. You can get all characters
     /// which are supported by the current font by calling supported_chars().
-    pub fn set_chars(&mut self, c: &[char]) -> &mut Self {
+    pub fn set_charset(&mut self, c: &[char]) -> &mut Self {
         self.use_font_chars = c.to_vec();
         self
     }
